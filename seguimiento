@@ -1,2 +1,5 @@
 me encargue de la parte visual y estuve viendo como hacer para empezar el trabajo
 estuve codificando una manera de recibir la ip y que corobore si esta bien la ip puesta o mal
+añadi la barra de progreso mas el nslookup y que se muestre en una tabla 
+agregue que cuando estas tipeando la ip corrobore de que este bien 
+agruegue que limpie la tabla y separe la vista y el controlador
