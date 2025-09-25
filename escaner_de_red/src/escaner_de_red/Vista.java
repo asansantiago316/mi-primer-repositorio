@@ -12,6 +12,9 @@ public class Vista extends JFrame {
     private JButton btnClearInputs;
     private JButton btnClearTable;
     private JButton btnExport;
+    private JButton btnNetstatE;
+    private JButton btnNetstatR;
+    private JButton btnNetstatN;
     private JProgressBar progressBar;
     private JTable table;
     private DefaultTableModel tableModel;
@@ -19,7 +22,7 @@ public class Vista extends JFrame {
     public Vista() {
         super("Escáner de red");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(600, 400);
+        setSize(700, 500);
         setLocationRelativeTo(null);
 
         // Panel de inputs
@@ -50,6 +53,15 @@ public class Vista extends JFrame {
         panelTableBtns.add(btnClearTable);
         panelTableBtns.add(btnExport);
 
+        // Botones Netstat
+        JPanel panelNetstatBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        btnNetstatE = new JButton("Netstat -e");
+        btnNetstatR = new JButton("Netstat -r");
+        btnNetstatN = new JButton("Netstat -n");
+        panelNetstatBtns.add(btnNetstatE);
+        panelNetstatBtns.add(btnNetstatR);
+        panelNetstatBtns.add(btnNetstatN);
+
         // Barra de progreso
         progressBar = new JProgressBar();
         progressBar.setStringPainted(true);
@@ -61,6 +73,7 @@ public class Vista extends JFrame {
 
         JPanel south = new JPanel(new BorderLayout());
         south.add(panelTableBtns, BorderLayout.NORTH);
+        south.add(panelNetstatBtns, BorderLayout.CENTER);
         south.add(progressBar, BorderLayout.SOUTH);
         add(south, BorderLayout.SOUTH);
     }
@@ -72,6 +85,9 @@ public class Vista extends JFrame {
     public JButton    getBtnClearInputs(){ return btnClearInputs;}
     public JButton    getBtnClearTable(){ return btnClearTable;}
     public JButton    getBtnExport()  { return btnExport;  }
+    public JButton    getBtnNetstatE(){ return btnNetstatE;}
+    public JButton    getBtnNetstatR(){ return btnNetstatR;}
+    public JButton    getBtnNetstatN(){ return btnNetstatN;}
     public JProgressBar getProgressBar(){ return progressBar;}
     public DefaultTableModel getTableModel(){ return tableModel;}
 }

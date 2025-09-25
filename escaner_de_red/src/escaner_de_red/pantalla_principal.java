@@ -1,4 +1,5 @@
 package escaner_de_red;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class pantalla_principal implements ActionListener {
-    private final Vista view; //la clase de la interfaz grafica
+    private final Vista view;
 
     public pantalla_principal(Vista view) {
         this.view = view;
@@ -18,7 +19,7 @@ public class pantalla_principal implements ActionListener {
         // Validación en tiempo real de IPs
         view.getTxtIP().getDocument().addDocumentListener(new IPFieldValidator(view.getTxtIP()));
         view.getTxtIP2().getDocument().addDocumentListener(new IPFieldValidator(view.getTxtIP2()));
-        view.getBtnEscanear().setEnabled(false); //en caso de estar mal la ip se deshabilita
+        view.getBtnEscanear().setEnabled(false);
 
         // Registramos listeners de botones
         view.getBtnEscanear().addActionListener(this);
@@ -26,57 +27,79 @@ public class pantalla_principal implements ActionListener {
         view.getBtnClearTable().addActionListener(this);
         view.getBtnExport().addActionListener(this);
 
+        // ✅ Registramos netstat
+        view.getBtnNetstatE().addActionListener(this);
+        view.getBtnNetstatR().addActionListener(this);
+        view.getBtnNetstatN().addActionListener(this);
+
         view.setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        Object src = e.getSource(); //obtiene el componente el cual hizo que se llame la funcion
+        Object src = e.getSource();
 
         if (src == view.getBtnClearInputs()) {
             view.getTxtIP().setText("");
             view.getTxtIP2().setText("");
             view.getTxtIP().setBorder(null);
             view.getTxtIP2().setBorder(null);
-            return; // si src = a borrar inputs los borra
+            return;
         }
 
         if (src == view.getBtnClearTable()) {
             view.getTableModel().setRowCount(0);
             view.getProgressBar().setValue(0);
-            return; //borra la tabla
+            return;
         }
 
         if (src == view.getBtnExport()) {
-            exportTableToText(); //lama la funcion exportar
+            exportTableToText();
             return;
         }
 
         if (src == view.getBtnEscanear()) {
-            doScan(); //lama el escaneo
+            doScan();
+            return;
+        }
+
+        // ✅ Acciones de netstat
+        if (src == view.getBtnNetstatE()) {
+            runNetstatCommand("netstat -e");
+            return;
+        }
+        if (src == view.getBtnNetstatR()) {
+            runNetstatCommand("netstat -r");
+            return;
+        }
+        if (src == view.getBtnNetstatN()) {
+            runNetstatCommand("netstat -n");
+            return;
         }
     }
-    
-    
 
     // Lanza el SwingWorker que hace ping + nslookup
     private void doScan() {
-        String startIp = view.getTxtIP().getText().trim(); //consigue el texto sin espacios de la ip inicio
-        String endIp   = view.getTxtIP2().getText().trim();//consigue el texto sin espacios de ip final
+        String startIp = view.getTxtIP().getText().trim();
+        String endIp   = view.getTxtIP2().getText().trim();
 
         if (!isValidIP(startIp) || !isValidIP(endIp)) {
             JOptionPane.showMessageDialog(view,
                 "Introduce direcciones IP válidas.",
                 "Error de validación",
                 JOptionPane.ERROR_MESSAGE
-            ); //tira error si no cumple con la validacion de ip
+            );
             return;
         }
 
         long start = ipToLong(startIp);
         long end   = ipToLong(endIp);
         if (start > end) {
-            JOptionPane.showMessageDialog(view,"La IP inicial debe ser menor o igual que la IP final","Error de rango",JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(view,
+                "La IP inicial debe ser menor o igual que la IP final",
+                "Error de rango",
+                JOptionPane.ERROR_MESSAGE
+            );
             return;
         }
 
@@ -84,9 +107,9 @@ public class pantalla_principal implements ActionListener {
         view.getBtnEscanear().setEnabled(false);
         view.getTxtIP().setEnabled(false);
         view.getTxtIP2().setEnabled(false);
-        view.getTableModel().setRowCount(0); //dejata dodo en false para inhabilitarlo durante la ejecucion
+        view.getTableModel().setRowCount(0);
 
-        int total = (int)(end - start + 1); //le suma 1 a la barra de progreso
+        int total = (int)(end - start + 1);
         JProgressBar bar = view.getProgressBar();
         bar.setMinimum(0);
         bar.setMaximum(total);
@@ -97,11 +120,11 @@ public class pantalla_principal implements ActionListener {
             protected Void doInBackground() throws Exception {
                 int count = 0;
                 for (long ipNum = start; ipNum <= end; ipNum++) {
-                    String ipStr = longToIp(ipNum); //mientras el numero de la ip sea menor a la final sigue convirtiendo los numeros en ip
+                    String ipStr = longToIp(ipNum);
 
                     // 🔍 Validación extra de IP
                     if (!isValidIP(ipStr)) {
-                        continue;  // salta IPs inválidas como 192.168.1.300
+                        continue;  // salta IPs inválidas
                     }
 
                     String pingRes;
@@ -110,7 +133,7 @@ public class pantalla_principal implements ActionListener {
                         pingRes = (p.waitFor() == 0) ? "Activo" : "No responde";
                     } catch (Exception ex) {
                         pingRes = "Error ping";
-                    } //ejecuta ping
+                    }
 
                     StringBuilder nsb = new StringBuilder();
                     try {
@@ -118,7 +141,7 @@ public class pantalla_principal implements ActionListener {
                         BufferedReader r = new BufferedReader(new InputStreamReader(n.getInputStream()));
                         String line;
                         while ((line = r.readLine()) != null) {
-                            nsb.append(line).append(" | "); //ejecuta nslookup usa buffered readers para luego colocarlo en el texto
+                            nsb.append(line).append(" | ");
                         }
                     } catch (IOException ex) {
                         nsb.append("Error nslookup");
@@ -126,7 +149,7 @@ public class pantalla_principal implements ActionListener {
 
                     publish(new Object[]{ ipStr, pingRes, nsb.toString() });
                     count++;
-                    bar.setValue(count);  // Actualizo la barra directamente
+                    bar.setValue(count);
                 }
                 return null;
             }
@@ -134,15 +157,14 @@ public class pantalla_principal implements ActionListener {
             @Override
             protected void process(List<Object[]> chunks) {
                 chunks.forEach(row -> view.getTableModel().addRow(row));
-                // No hace falta actualizar la barra acá porque ya la actualizamos arriba
             }
 
             @Override
             protected void done() {
                 view.getBtnEscanear().setEnabled(true);
                 view.getTxtIP().setEnabled(true);
-                view.getTxtIP2().setEnabled(true); //vuelve a poner todo en true porque termino el escaneo
-                bar.setValue(0); //pone la barra de vuelta en 0%
+                view.getTxtIP2().setEnabled(true);
+                bar.setValue(0);
                 try {
                     get();
                 } catch (InterruptedException | ExecutionException ex) {
@@ -188,31 +210,64 @@ public class pantalla_principal implements ActionListener {
         }
     }
 
+    // ✅ Método para ejecutar netstat
+    private void runNetstatCommand(String command) {
+        try {
+            Process p = Runtime.getRuntime().exec("cmd /c " + command);
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(p.getInputStream())
+            );
+
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+            p.waitFor();
+
+            // Mostrar resultados en un cuadro scrollable
+            JTextArea textArea = new JTextArea(output.toString());
+            textArea.setEditable(false);
+            JScrollPane scroll = new JScrollPane(textArea);
+            scroll.setPreferredSize(new java.awt.Dimension(800, 400));
+
+            JOptionPane.showMessageDialog(view, scroll,
+                    "Resultado de " + command,
+                    JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(view,
+                "Error al ejecutar " + command + ": " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
     // ---------------- Utilidades ----------------
 
     private boolean isValidIP(String ip) {
         if (ip == null || ip.isEmpty()) return false;
         String pattern =
-            "^(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)\\." + //cubre valores de IPV4
+            "^(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)\\." +
             "(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)\\." +
             "(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)\\." +
-            "(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)$"; //son 4 porque la ip esta dividida en cuatro digitos distintos
+            "(25[0-5]|2[0-4]\\d|[01]?\\d?\\d)$";
         return ip.matches(pattern);
     }
 
     private long ipToLong(String ip) {
-        String[] octs = ip.split("\\."); //long canbia el num a 32bits y los separa en 8 cada uno
+        String[] octs = ip.split("\\.");
         long val = 0;
         for (String o : octs) {
-            val = (val << 8) | Integer.parseInt(o); //los convierte en int
+            val = (val << 8) | Integer.parseInt(o);
         }
         return val;
     }
 
     private String longToIp(long ip) {
         return String.format("%d.%d.%d.%d",
-            (ip >> 24) & 0xFF, //los enmascara como 255 maximo cada uno y va dezplazando
-            (ip >> 16) & 0xFF,// hasta conseguir toda la ip de vuelta
+            (ip >> 24) & 0xFF,
+            (ip >> 16) & 0xFF,
             (ip >>  8) & 0xFF,
              ip        & 0xFF
         );
@@ -258,4 +313,4 @@ public class pantalla_principal implements ActionListener {
         );
     }
 }
-//tengo que hacer un codigo con el cual yo ingreso una ip y a esta le asigno un rengo es decir si tengo la ip 1.00.1.1 tengo que poner un rango que por ejemplo sea hasta 99 entonces va a ir viendo la ip hasta 1.00.1.99
+
